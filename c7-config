@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source bash-import
+import network-utils
+
+##
+##readonly BITNAMI_REPO_NAME='bitname'
+##readonly BITNAMI_REPO_URL='bitnami https://charts.bitnami.com/bitnami'
+##readonly POSTGRESQL_RELEASE_NAME='postgres'
+##readonly POSTGRESQL_CHART_NAME='bitnami/postgresql'
+##
+
+readonly REPO_NAME='camunda-7'
+readonly REPO_URL='https://helm.cch.camunda.cloud'
+readonly RELEASE_NAME='c7'
+readonly CHART_NAME='camunda-bpm-platform'
+readonly HOST_IP="$(getHostIP)"
+
+#::END::

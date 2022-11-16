@@ -1,0 +1,61 @@
+#!/bin/bash
+
+kubectl_portForward_start() {
+	local _SERVICE_NAME=$1
+	local _NAMESPACE=$2
+	local _HOST_IP=$3
+	local _HOST_PORT=$4
+	local _POD_PORT=$5
+	local _LOG_FILE=$6
+
+	nohup kubectl port-forward \
+		--address=localhost,${_HOST_IP} \
+		-n ${_NAMESPACE} \
+		$_SERVICE_NAME \
+		$_HOST_PORT:$_POD_PORT > ${_LOG_FILE} 2>&1 &
+	sleep 1
+	cat ${_LOG_FILE}
+}
+
+kubectl_portForward_stop() {
+	local _PORT=$1
+	ss -antp | grep -i kubectl | grep $_PORT | awk '{print $6}' | sed  -E 's/(users.*pid=)(.*)([,].*)/\2/' | uniq | xargs -n 1 kill -9 > /dev/null 2>&1
+}
+
+kubectl_portForward_stop_all() {
+	local _PORT=$1
+	ss -antp | grep -i kubectl | awk '{print $6}' | sed  -E 's/(users.*pid=)(.*)([,].*)/\2/' | uniq | xargs -n 1 kill -9 > /dev/null 2>&1
+}
+
+
+kubectl_getPods() {
+	local _PODS_REGEX="$1"
+	local _PODS=( $(kubectl get pods -o json | jq -r '.items[] | select (.metadata.name | test("'"${_PODS_REGEX}"'")) | .metadata.name') )
+	echo ${_PODS[*]}
+}
+
+kubectl_getPodState() {
+        local _POD_NAME=$1
+        kubectl get pods -o json | jq -r -c '.items[] | select (.metadata.name | contains("'${_POD_NAME}'")) | .status.containerStatuses[] | select(.name = "'${_POD_NAME}'") | .state | keys[]' 2> /dev/null
+}
+
+kubectl_waitForRollout() {
+        local _DEPLOYMENT_NAME=$1
+	kubectl rollout status deployment ${_DEPLOYMENT_NAME}
+}
+
+kubectl_waitForPodRunningState() {
+        local _POD_NAME=$1
+	local _CHECK_INTERVAL=5
+	echo "Checking if POD $_POD_NAME is in running state..."
+	while true; do
+		_POD_STATE="$(kubectl_getPodState $_POD_NAME)"
+		echo "Pod state is [$_POD_STATE]."
+		[[ "$_POD_STATE" == "running" ]] && break
+		echo "  Checking again in $_CHECK_INTERVAL seconds."
+		sleep $_CHECK_INTERVAL
+	done
+	echo "POD $_POD_NAME is running"
+}
+
+#::END::

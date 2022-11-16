@@ -1,0 +1,18 @@
+#!/bin/bash
+
+source bash-import
+import kubectl-utils
+import dashboard-config
+import dashboard-port
+
+kubectl delete -f ${DASHBOARD_SETUP_YAML_URL}
+kubectl delete clusterrolebinding $SERVICE_ACCOUNT
+kubectl delete serviceaccount ${SERVICE_ACCOUNT} -n ${NAMESPACE}
+echo "Stopping dashboard port forwarding..."
+kubectl_portForward_stop $DASHBOARD_PORT
+echo "Dashboard port forwarding stopped."
+[[ -f ${DASHBOARD_LOG} ]] && rm -f ${DASHBOARD_LOG}
+[[ -f ${DASHBOARD_PORTFORWARD_LOG} ]] && rm -f ${DASHBOARD_PORTFORWARD_LOG}
+[[ -f ${DASHBOARD_PORT_FILE} ]] && rm -f ${DASHBOARD_PORT_FILE}
+
+#::END::

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+readonly SERVICE_ACCOUNT="admin"
+readonly NAMESPACE="default"
+
+LOGIN_TOKEN=$(kubectl -n ${NAMESPACE} create token ${SERVICE_ACCOUNT})
+
+cat <<- EOF
+
+Dashboard login token:
+$LOGIN_TOKEN
+
+EOF
+
+#::END::

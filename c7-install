@@ -1,0 +1,36 @@
+#!/bin/bash
+
+source bash-import
+
+import network-utils
+import helm-utils
+import kubectl-utils
+import c7-config
+
+readonly POD_REGEX="camunda-bpm-platform.*"
+
+##helm_addRepo ${BITNAMI_REPO_NAME} ${BITNAMI_REPO_URL}
+##helm_installChart ${POSTGRESQL_RELEASE_NAME} ${BITNAMI_REPO_NAME} ${POSTGRESQL_CHART_NAME}
+
+helm_addRepo ${REPO_NAME} ${REPO_URL}
+helm_installChart ${RELEASE_NAME} ${REPO_NAME} ${CHART_NAME}
+sleep 10
+
+PODS=( $(kubectl_getPods "$POD_REGEX") )
+ALL_PODS=( ${PODS[*]} )
+echo "List of all PODS:"
+for POD_NAME in ${ALL_PODS[*]} ; do
+        echo " - ${POD_NAME}"
+done
+for POD_NAME in ${ALL_PODS[*]} ; do
+        kubectl_waitForPodRunningState "${POD_NAME}"
+done
+echo "Waiting for rollout to complete..."
+kubectl_waitForRollout "$RELEASE_NAME-$CHART_NAME"
+echo "Forwarding port..."
+kubectl_portForward_start "svc/$RELEASE_NAME-$CHART_NAME" "default" "${HOST_IP}" "8080" "8080" "$RELEASE_NAME-portforward.log"
+echo ""
+echo "Camunda 7 deployment complete."
+echo ""
+
+#::END::

@@ -1,0 +1,68 @@
+#!/bin/bash
+
+helm_updateRepo() {
+	local _REPO_NAME=$1
+	echo "Updating Helm repos..."
+	helm repo update ${_REPO_NAME}
+}
+
+helm_addRepo() {
+	local _REPO_NAME=$1
+	local _REPO_URL=$2
+
+	if [[ -z ${_REPO_NAME} && -z ${_REPO_URL} ]]; then
+		echo "Both repo name & repo url must be provided" 
+		exit 1
+	fi
+	if [[ -z ${_REPO_NAME} ]]; then
+		echo "Repo name must be provided" 
+		exit 1
+	fi
+	if [[ -z ${_REPO_URL} ]]; then
+		echo "Repo url must be provided" 
+		exit 1
+	fi
+
+	if [[ -z $(helm repo list -o json | jq ' .[] | select(.name == "'${_REPO_NAME}'") | .name') ]]; then
+		echo "Adding repo [${_REPO_NAME}] with URL [${REPO_URL}] ..."
+		helm repo add ${_REPO_NAME} ${_REPO_URL}
+		(( $? )) && echo "ERROR: Failed to add repo [${_REPO_NAME}]. Aborting..." && exit 1
+	else
+		echo "${_REPO_NAME} already added."
+	fi
+
+	helm_updateRepo ${_REPO_NAME}
+}
+
+helm_installChart() {
+	local _RELEASE_NAME=$1
+	local _REPO_NAME=$2
+	local _CHART_NAME=$3
+	local _VALUES_FILE_NAME=${4:-NONE}
+	#local _CHART_INSTALL_LOG="helm-chart-${_CHART_NAME}_install-$(date +%Y%m%d%H%M%S).log"
+	local _CHART_INSTALL_LOG="helm-chart-${_CHART_NAME}_install.log"
+
+	cat <<- MSG
+
+		Installing chart...
+		Release name     : ${_RELEASE_NAME}
+		Repo name        : ${_REPO_NAME}
+		Chart name       : ${_CHART_NAME}
+		Values file      : ${_VALUES_FILE_NAME}
+		Install log file : ${_CHART_INSTALL_LOG}
+
+	MSG
+	[[ "${_VALUES_FILE_NAME}" != "NONE" ]] && _VALUES_FILE=" -f ${_VALUES_FILE_NAME}"
+	HELM_CMD="helm install ${_RELEASE_NAME} ${_REPO_NAME}/${_CHART_NAME} ${_VALUES_FILE}"
+	cat <<- HELMCMD
+	${HELM_CMD}
+
+	HELMCMD
+	${HELM_CMD} > ${_CHART_INSTALL_LOG} 2>&1
+	(( $? )) && echo "Failed to install chart" && echo "" && exit 1
+	cat ${_CHART_INSTALL_LOG}
+	echo "Successfully installed the chart"
+	echo ""
+}
+
+#::END::

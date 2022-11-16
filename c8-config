@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source bash-import
+import network-utils
+
+readonly RELEASE_NAME='c8'
+readonly REPO_NAME='camunda'
+readonly REPO_URL='https://helm.camunda.io'
+readonly CHART_NAME='camunda-platform'
+readonly VALUES_FILE='c8-kind-values.yaml'
+readonly HOST_IP="$(getHostIP)"
+
+#::END::

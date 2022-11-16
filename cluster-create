@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "Creating cluster..."
+kind create cluster --name camunda --config=cluster.yaml
+(( $? )) && echo "Failed to create the cluster." && exit 1
+echo "Successfully create the cluster".
+
+#echo "Setting up ingress controller (contour)..."
+#kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
+#echo "Applying 'kind' specific patch to 'contour' ingress controller..."
+#kubectl patch daemonsets -n projectcontour envoy -p '{"spec":{"template":{"spec":{"nodeSelector":{"ingress-ready":"true"},"tolerations":[{"key":"node-role.kubernetes.io/control-plane","operator":"Equal","effect":"NoSchedule"},{"key":"node-role.kubernetes.io/master","operator":"Equal","effect":"NoSchedule"}]}}}}'
+
+#::END::

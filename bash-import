@@ -1,0 +1,10 @@
+#!/bin/bash
+
+import() {
+	local BASH_SRC_FILE=$1
+	[[ ! -f $BASH_SRC_FILE ]] && echo "$BASH_SRC_FILE source file not found. aborting..." && exit 1
+	source ${BASH_SRC_FILE}
+	(( $? )) && echo "Failed to load $BASH_SRC_FILE source file. aborting..." && exit 1
+}
+
+#::END::

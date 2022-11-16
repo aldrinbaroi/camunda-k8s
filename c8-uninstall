@@ -1,0 +1,15 @@
+#!/bin/bash
+
+source bash-import
+import kubectl-utils
+import c8-config
+
+echo "Uninstalling Camunda $RELEASE_NAME ..."
+helm uninstall $RELEASE_NAME
+echo "Stopping all port forwards..."
+kubectl_portForward_stop 26500
+kubectl_portForward_stop 8081
+kubectl_portForward_stop 8082
+echo "All port forwards stopped."
+
+#::END:: 

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+source bash-import
+import network-utils
+import kubectl-utils
+import dashboard-config
+readonly DASHBOARD_PORT=$(findUnusedPort)
+echo "DASHBOARD_PORT=$DASHBOARD_PORT" > $DASHBOARD_PORT_FILE
+
+echo "Setting up dashboard..."
+cat <<- INFO
+
+	  Dashboard release tag     : $DASHBOARD_RELEASE_TAG
+	  Dashboard setup url       : $DASHBOARD_SETUP_YAML_URL
+	  Dashboard port            : $DASHBOARD_PORT
+	  Dashboard port forward log: $DASHBOARD_PORTFORWARD_LOG
+	  Dashboard namesapce       : $DASHBOARD_NAMESPACE
+	  Dashboard file            : $DASHBOARD_LOG
+	  Host IP                   : $HOST_IP
+	  Service account           : $SERVICE_ACCOUNT
+	  Default namespace         : $NAMESPACE
+
+INFO
+kubectl apply -f ${DASHBOARD_SETUP_YAML_URL}
+sleep 5
+echo "Creating service acouunt..."
+kubectl create serviceaccount ${SERVICE_ACCOUNT} -n ${NAMESPACE}
+echo "Creating cluster admin role for the service account..."
+kubectl create clusterrolebinding ${SERVICE_ACCOUNT} -n ${NAMESPACE} \
+	 --clusterrole=cluster-admin --serviceaccount=${NAMESPACE}:${SERVICE_ACCOUNT}
+sleep 5
+DASHBOARD_PODS=( $(kubectl_getPods "$DASHBOARD_PODS_REGEX"))
+METRIC_SCRAPER_PODS=( $(kubectl_getPods "$METRIC_SCRAPER_PODS_REGEX"))
+ALL_PODS=( ${DASHBOARD_PODS[*]} ${METRIC_SCRAPER_PODS[*]} )
+echo "List of all dashboard related PODS:"
+for POD_NAME in ${ALL_PODS[*]} ; do
+        echo " - ${POD_NAME}"
+done
+for POD_NAME in ${ALL_PODS[*]} ; do
+        kubectl_waitForPodRunningState "${POD_NAME}"
+done
+echo "Forwarding port $DASHBOARD_PORT to localhost,${HOST_IP}..."
+kubectl_portForward_start "service/kubernetes-dashboard" "${DASHBOARD_NAMESPACE}" "${HOST_IP}" "$DASHBOARD_PORT" "443" "$DASHBOARD_PORTFORWARD_LOG"
+echo "Creating login token..."
+LOGIN_TOKEN=$(kubectl -n ${NAMESPACE} create token ${SERVICE_ACCOUNT})
+cat <<- EOF > ${DASHBOARD_LOG}
+
+Dashboard URL: https://[$HOST_IP | localhost]:$DASHBOARD_PORT
+Dashboard login token:
+$LOGIN_TOKEN
+
+EOF
+
+cat ${DASHBOARD_LOG}
+
+#::END::

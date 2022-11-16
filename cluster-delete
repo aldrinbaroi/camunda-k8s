@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source bash-import
+import kubectl-utils
+
+echo "Stopping all port forwarding..."
+kubectl_portForward_stop_all
+echo "Stopped all port forwarding."
+echo "Deleting cluster..."
+kind delete cluster --name camunda 
+echo "Cluster deleted."
+rm -f *.log
+
+#::END::

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+source bash-import
+
+import helm-utils
+import kubectl-utils
+import network-utils
+import c8-config
+
+readonly POD_REGEX_ZEEBE="^${RELEASE_NAME}-zeebe-.*"
+readonly POD_REGEX_OPERATE="^${RELEASE_NAME}-operate-.*"
+readonly POD_REGEX_TASKLIST="^${RELEASE_NAME}-tasklist-.*"
+readonly POD_REGEX_ELASTICSEARCH="^elasticsearch-.*"
+
+helm_addRepo ${REPO_NAME} ${REPO_URL}
+helm_installChart ${RELEASE_NAME} ${REPO_NAME} ${CHART_NAME} ${VALUES_FILE}
+echo "Waiting 5 seconds before starting checking POD statuses..."
+sleep 10 
+ZEEBE_PODS=( $(kubectl_getPods "$POD_REGEX_ZEEBE") )
+OPERATE_PODS=( $(kubectl_getPods "$POD_REGEX_OPERATE") )
+TASKLIST_PODS=( $(kubectl_getPods "$POD_REGEX_TASKLIST") )
+ELASTICSEARCH_PODS=( $(kubectl_getPods "$POD_REGEX_ELASTICSEARCH") )
+ALL_PODS=( ${ZEEBE_PODS[*]} ${OPERATE_PODS[*]} ${TASKLIST_PODS[*]} ${ELASTICSEARCH_PODS[*]} )
+echo "List of all PODS:"
+for POD_NAME in ${ALL_PODS[*]} ; do
+	echo " - ${POD_NAME}"
+done
+for POD_NAME in ${ALL_PODS[*]} ; do
+	kubectl_waitForPodRunningState "${POD_NAME}"
+done
+cat <<- INFO
+
+Setting up port forwared...
+  Zeebee gateway port : 26500
+  Operate port        : 8081
+  Tasklist port       : 8082
+
+INFO
+kubectl_portForward_start "svc/c8-zeebe-gateway" "default" "${HOST_IP}" "26500" "26500" "c8-zeebe.log"
+kubectl_portForward_start "svc/c8-operate" "default" "${HOST_IP}" "8081" "80" "c8-operate.log"
+kubectl_portForward_start "svc/c8-tasklist" "default" "${HOST_IP}" "8082" "80" "c8-tasklist.log"
+echo ""
+echo "Camunda deployment complete."
+echo ""
+
+#::END::

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source bash-import
+import network-utils
+
+readonly DASHBOARD_RELEASE_TAG="v2.5.1"
+readonly DASHBOARD_SETUP_YAML_URL="https://raw.githubusercontent.com/kubernetes/dashboard/${DASHBOARD_RELEASE_TAG}/aio/deploy/recommended.yaml"
+readonly DASHBOARD_NAMESPACE="kubernetes-dashboard"
+readonly DASHBOARD_LOG="dashboard.log"
+readonly DASHBOARD_PORTFORWARD_LOG="dashboard.log"
+readonly HOST_IP=$(getHostIP)
+readonly SERVICE_ACCOUNT="admin"
+readonly NAMESPACE="default"
+readonly DASHBOARD_PORT_FILE="dashboard-port"
+
+readonly DASHBOARD_POD_REGEX="kubernetes-dashboard-.*"
+readonly METRICS_SCRAPER_POD_REGEX="dashboard-metrics-scraper-.*"
+
+#::END::

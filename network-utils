@@ -1,0 +1,39 @@
+#!/bin/bash
+
+__NETSTAT_CMD=
+
+netstat_cmd() {
+	if [[ -z "$__NETSTAT_CMD" ]]; then
+		if [[ -x "$(command -v netstat)" ]]; then
+			readonly NETSTAT='netstat -antp'
+		else
+			if [[ -x "$(command -v ss)" ]]; then
+				readonly NETSTAT='ss -antp'
+			else
+				abort "Error: Required utilities not found: neither [netstat] nor [ss]"
+			fi
+		fi
+	fi
+	$__NETSTAT_CMD $@
+}
+
+getHostIP() {       
+        case "$OSTYPE" in
+                linux-gnu) ip route get $(ip route | awk '/default/ {print $3}') | awk 'NR==1 {print $5}' ;;     
+                darwin*) ipconfig getifaddr $(route get $(route get default | awk '/gateway/ {print $2}') | awk '/interface: / {print $2; }') ;;
+                *) echo "Unsupported OS: $OSTYPE.  Unable to get host IP address" ;;
+        esac
+}
+
+
+findUnusedPort() {
+        local used_ports=( $(netstat_cmd -ant4 | awk '(NR>2) {print $4"\n"$5}' | sed -e '/0[.]0[.]0[.]0/d' | sed -r 's/.*:([[:digit:]]+).*/\1/') )
+        while : ; do
+                unused_port=$((1024 + RANDOM))
+                [[ ! " ${used_ports[*]} " =~ " ${unused_port} " ]] && break
+        done
+        echo $unused_port
+}
+
+
+#::END::
